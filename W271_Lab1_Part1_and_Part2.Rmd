@@ -13,10 +13,12 @@ geometry: margin=1in
 
 Conduct a thorough EDA of the data set, including univariate, bivariate and trivariate analysis. This should include both graphical and tabular analysis as taught in this course. Output-dump (that is, graphs and tables that don't come with explanations) will result in a very low, if not zero, score. Since the report has a page-limit, you will have to be selective when choosing visuals to illustrate your key points, associated with a concise explanation of the visuals. This EDA should begin with an inspection of the given dataset; examination of anomalies, missing values, potential of top and/or bottom code etc.
 ```{r}
+setwd("~/Documents/Berkeley/W271/W271_lab1")
 #load the packages
 library(dplyr)
 library(ggplot2)
 library(car)
+library(psych)
 ```
 ```{r}
 #load and summarize data
@@ -121,7 +123,7 @@ However, this assumption is not necessarily true. For instance, the 6 primary O-
 
 (b) Estimate the logistic regression model using the explanatory variables in a linear form.
 
-From the exploratory data analysis, we found some correlation between *Temp* and *O-ring* while the correlation between *Pressure* and *O-ring* was not very obvious. However, we still want to include *Pressure* as an explanatory variable for the first logistic regression model. For a given launch $i$, we denote the probability for an O-ring to fail as $\pi_i$, launch temperature as $t_i$ and leak test pressure as $p_i$. The first model has the following equation: 
+From the exploratory data analysis, we found some correlation between *Temp* and *O-ring* while the correlation between *Pressure* and *O-ring* was not very obvious. However, we still want to include *Pressure* as an explanatory variable for the first logistic regression model. For a given launch $i$, we denote the probability for an O-ring to fail as $\pi_i$, launch temperature as $t_{i}$ and leak test pressure as $p_i$. The first model has the following equation: 
 $$
 logit \left( \pi_i \right)  = log \left( \frac{\pi_i}{1 - \pi_i} \right) = \beta_0 + \beta_1 t_i + \beta_2 p_i
 $$
@@ -161,15 +163,162 @@ Continuing Exercise 4, consider the simplified model $logit(\pi) = \beta_0 +  \b
 
 (a) Estimate the model.
 
+```{r}
+mod2 <- glm(O.ring/Number ~ Temp, weights = Number,
+               family = binomial (link = logit), data = data)
+summary(mod2)
+cbind(Estimate = coef(mod2), confint(mod2))
+```
+
 (b) Construct two plots: (1) $\pi$ vs. Temp and (2) Expected number of failures vs. Temp. Use a temperature range of 31° to 81° on the x-axis even though the minimum temperature in the data set was 53°.
+
+Given our logit model from (a), and required temperature range, we compute $\pi_{i}$ at each temperature as:
+$$
+\pi_{i} = \frac{e^{\beta_{0} + \beta_{1} \cdot t_{i}}}{1 + e^{\beta_{0} + \beta_{1} \cdot t_{i}}}
+$$
+Next, we use our assumption of independence of O-ring failures to compute the expected number of failures at a given temperature $t_{i}$ as:
+$$
+E[binom(n, \pi_{i})] = n \cdot \pi_{i} = 6 \cdot \pi_{i}
+$$
+```{r}
+results_df <- data.frame(Temp=seq(from = 31, to = 81, by = 1))
+params = predict(object=mod2, newdata = results_df, type = 'link', se = TRUE)
+results_df['pi.hat'] = exp(params$fit) / (1 + exp(params$fit))
+
+# Note that results_df['pi'] is the probability of failure at the corresponding temperature.
+# Since we've assumed all our failures are independent, then our expected number of failures is the mean
+#  of E[bin(n, p)] 
+#     = n * p 
+#     = 6 * results_df['pi']
+results_df['expected_failures'] = 6*results_df['pi.hat']
+
+ggplot(data=results_df, aes(Temp, pi.hat)) +
+  geom_point() +
+  geom_line(color='blue') +
+  ggtitle("Estimated probability of O-ring failure as a function of Temperature") +
+  theme(plot.title = element_text(lineheight=1, face='bold'))
+
+ggplot(data=results_df, aes(Temp, expected_failures)) +
+  geom_point() +
+  geom_line(color='blue') +
+  ggtitle("Expected number of failures as a function of Temperature") +
+  theme(plot.title = element_text(lineheight=1, face='bold'))
+```
 
 (c) Include the 95% Wald confidence interval bands for $\pi$ on the plot. Why are the bands much wider for lower temperatures than for higher temperatures?
 
+We build the 95% Wald confidence interval bounds, using the fact that our confidence interval for $logit(\pi_{i})$ as:
+$$
+\alpha = 0.05 \\
+\hat{\beta_{0}} + \hat{\beta_{1}} \cdot t_{i} \pm Z_{1-\alpha/2} \cdot \sqrt{\widehat{Var}(\hat{\beta_{0}} + \hat{\beta_{1}} \cdot t_{i})}
+$$
+Then constructing a confidence interval for $\pi_{i}$ as:
+$$
+\frac{e^{\hat{\beta_{0}} + \hat{\beta_{1}} \cdot t_{i} \pm Z_{1-\alpha/2} \cdot \sqrt{\widehat{Var}(\hat{\beta_{0}} + \hat{\beta_{1}} \cdot t_{i})}}}{1 + e^{\hat{\beta_{0}} + \hat{\beta_{1}} \cdot t_{i} \pm Z_{1-\alpha/2} \cdot \sqrt{\widehat{Var}(\hat{\beta_{0}} + \hat{\beta_{1}} \cdot t_{i})}}}
+$$
+Bounds for lower temperatures are significanlty wider, because we have much fewer samples at lower temperatures, and no samples below $53^{\circ} F$.
+
+```{r}
+alpha = 0.05
+CI.preds.low = params$fit + (qnorm(p=c(alpha/2)) * params$se.fit)
+CI.preds.high = params$fit + (qnorm(p=c(1-alpha/2)) * params$se.fit)
+
+results_df['CI.pi.low'] = exp(CI.preds.low) / (1 + exp(CI.preds.low))
+results_df['CI.pi.high'] = exp(CI.preds.high) / (1 + exp(CI.preds.high))
+
+colors <- c("CI.pi.low" = "green", "CI.pi.high" = "blue", "pi.hat" = "black")
+
+ggplot(data=results_df, aes(x=Temp), group=colors,) +
+  geom_line(aes(y=pi.hat, color='pi.hat')) +
+  geom_line(aes(y=CI.pi.high, color='CI.pi.high'), linetype='dashed') +
+  geom_line(aes(y=CI.pi.low, color='CI.pi.low'), linetype='dotdash') +
+  labs(x = "Temperature", y = "Prob. Of Failure", color = "Legend") +
+  scale_color_manual(values = colors) +
+  ggtitle("Estimated probability of O-ring failure as a function of Temperature, with Confidence ") +
+  theme(plot.title = element_text(lineheight=1, face='bold'))
+```
+
 (d) The temperature was 31° at launch for the Challenger in 1986. Estimate the probability of an O-ring failure using this temperature, and compute a corresponding confidence interval. Discuss what assumptions need to be made in order to apply the inference procedures.
+
+Based on our model, the probability of an O-ring failure at $31^{\circ}$F is:
+```{r}
+# Compute probability, above.
+params = predict(mod2, newdata=data.frame(Temp=31), type = 'link', se = TRUE)
+pi.hat = exp(params$fit) / (1 + exp(params$fit))
+pi.hat
+```
+$$
+\pi_{i} = \frac{e^{\beta_{0} + \beta_{1} \cdot 31}}{1 + e^{\beta_{0} + \beta_{1} \cdot 31}} = 0.81778
+$$
+
+Since its not specified, we'll look at both the Wald and LRT confidence intervals for this temperature.
+```{r}
+library(mcprofile)
+# Compute Wald CI @ Temp = 31.
+alpha=0.05
+logit_pred = pi.hat + qnorm(c(alpha, 1-alpha/2))*params$se.fit
+CI.pi.pred = exp(logit_pred) / ( 1 + exp(logit_pred))
+paste("Wald CI:")
+as.numeric(CI.pi.pred)
+
+# Compute LR @ Temp = 31
+K = matrix(data = c(1, 31), nrow=1, ncol=2)
+mc.ci.profile = mcprofile(object=mod2, CM=K)
+mc.ci.logit = confint(object=mc.ci.profile, level=0.95)
+mc.ci = exp(mc.ci.logit$confint) / (1 + exp(mc.ci.logit$confint))
+paste("MC CI:")
+as.numeric(mc.ci)
+```
+$$
+Wald.CI = (0.13749, 0.98166)\\
+MCprofile.CI = (0.14185, 0.99052)
+$$
 
 (e) Rather than using Wald or profile LR intervals for the probability of failure, Dalal et al. (1989) use a parametric bootstrap to compute intervals. Their process was to (1) simulate a large number of data sets (n = 23 for each) from the estimated model of  Temp; (2) estimate new models for each data set, say and (3) compute  at a specific temperature of interest. The authors used the 0.05 and 0.95 observed quantiles from the  simulated distribution as their 90% confidence interval limits. Using the parametric bootstrap, compute 90% confidence intervals separately at temperatures of 31° and 72°.27
 
+```{r}
+beta0 = coef(mod2)[1]
+beta1 = coef(mod2)[2]
+
+compute_glm = function(X, ymatrix, t) {
+  # Get pi estimates for sample
+  pi.logit.sample = beta0 + beta1*X
+  pi.sample = exp(pi.logit.sample) / (1 + exp(pi.logit.sample))
+  
+  # Sample binomial
+  y = rbinom(n=length(X), size=1, prob=pi.sample)
+  cbind(ymatrix, y)
+
+  mod.sample <-glm(formula = y ~ X, family = binomial(link = 'logit'))
+  beta0 = coef(mod.sample)[1]
+  beta1 = coef(mod.sample)[2]
+  
+  return(exp(beta0 + beta1*t) / (1 + exp(beta0 + beta1*t)))
+}
+
+bootstrap_estimate = function(temp) {
+  samples = 23
+  
+  n_samples=2000
+  x = runif(n=samples*n_samples, min=31, max=71)
+  xmatrix = matrix(data=x, nrow=samples, ncol=n_samples)
+  ymatrix = matrix(nrow=samples)
+
+  save.results<-apply(X = xmatrix, MARGIN = 2, FUN = compute_glm, y=ymatrix, t=temp)
+
+  return(save.results)
+}
+
+results = bootstrap_estimate(temp=31)
+quantile(results, probs=c(0.05, 0.95), na.rm=TRUE)
+
+results = bootstrap_estimate(temp=72)
+quantile(results, probs=c(0.05, 0.95), na.rm=TRUE)
+```
+
 (f) Determine if a quadratic term is needed in the model for the temperature.
+
+
 
 **Part 4 (10 points)**
 
