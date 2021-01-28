@@ -275,37 +275,32 @@ MCprofile.CI = (0.14185, 0.99052)
 $$
 
 (e) Rather than using Wald or profile LR intervals for the probability of failure, Dalal et al. (1989) use a parametric bootstrap to compute intervals. Their process was to (1) simulate a large number of data sets (n = 23 for each) from the estimated model of  Temp; (2) estimate new models for each data set, say and (3) compute  at a specific temperature of interest. The authors used the 0.05 and 0.95 observed quantiles from the  simulated distribution as their 90% confidence interval limits. Using the parametric bootstrap, compute 90% confidence intervals separately at temperatures of 31° and 72°.27
-
 ```{r}
-beta0 = coef(mod2)[1]
-beta1 = coef(mod2)[2]
-
-compute_glm = function(X, ymatrix, t) {
+compute_glm = function(X, t) {
   # Get pi estimates for sample
-  pi.logit.sample = beta0 + beta1*X
-  pi.sample = exp(pi.logit.sample) / (1 + exp(pi.logit.sample))
+  pi.logit.sample = exp(mod2$coefficients[1] + mod2$coefficients[2] * X)
+  pi.sample = pi.logit.sample / (1 + pi.logit.sample)
   
-  # Sample binomial
-  y = rbinom(n=length(X), size=1, prob=pi.sample)
-  cbind(ymatrix, y)
+  # Sample binomial for simulated errors.
+  y = rbinom(n=length(X), size=6, prob=pi.sample)
 
-  mod.sample <-glm(formula = y ~ X, family = binomial(link = 'logit'))
-  beta0 = coef(mod.sample)[1]
-  beta1 = coef(mod.sample)[2]
+  mod.sample <- glm(formula = y/data$Number ~ X, family = binomial(link = logit), weights=data$Number)
+
+  pi.logit.star = exp(mod.sample$coefficients[1] + mod.sample$coefficients[2] * t)
+  pi.hat.star = pi.logit.star / (1 + pi.logit.star)
   
-  return(exp(beta0 + beta1*t) / (1 + exp(beta0 + beta1*t)))
+  return(pi.hat.star)
 }
 
 bootstrap_estimate = function(temp) {
   samples = 23
-  
   n_samples=2000
-  x = runif(n=samples*n_samples, min=31, max=71)
-  xmatrix = matrix(data=x, nrow=samples, ncol=n_samples)
-  ymatrix = matrix(nrow=samples)
+  
+  x = sample(data$Temp, samples*n_samples, replace=TRUE)
+  xmatrix = matrix(data=unlist(x), nrow=samples, ncol=n_samples)
 
-  save.results<-apply(X = xmatrix, MARGIN = 2, FUN = compute_glm, y=ymatrix, t=temp)
-
+  save.results<-apply(X = xmatrix, MARGIN = 2, FUN = compute_glm, t = temp)
+  
   return(save.results)
 }
 
@@ -318,11 +313,35 @@ quantile(results, probs=c(0.05, 0.95), na.rm=TRUE)
 
 (f) Determine if a quadratic term is needed in the model for the temperature.
 
+```{r}
+mod3 <- glm(O.ring/Number ~ Temp + I(Temp^2), weights = Number,
+               family = binomial (link = logit), data = data)
 
+Anova(mod2)
+Anova(mod3, test='LR')
+```
+
+Based on the likelihood ratio test, the quadratic term is not significant for the model (P value ~0.4818).
 
 **Part 4 (10 points)**
 
 With the same set of explanatory variables in your final model, estimate a linear regression model. Explain the model results; conduct model diagnostic; and assess the validity of the model assumptions.  Would you use the linear regression model or binary logistic regression in this case?  Explain why.
+
+```{r}
+mod4 = lm(formula = O.ring/Number ~ Temp, data=data)
+summary(mod4)
+```
+The model correctly indicates that Temp is significant, with a P value < 0.05; however, the model itself is not appropriate for our use case, as it does not produce a probability score, even across the temperatures of interest to us. At $78^{\circ}$F the probability estimate becomes negative.
+
+```{r}
+results_df['pi.hat.linear'] = predict(mod4, newdata=results_df)
+
+ggplot(data=results_df, aes(Temp, pi.hat.linear)) +
+  geom_point() +
+  geom_line(color='blue') +
+  ggtitle("Estimated probability of O-ring failure as a function of Temperature") +
+  theme(plot.title = element_text(lineheight=1, face='bold'))
+```
 
 **Part 5 (10 points)**
 
