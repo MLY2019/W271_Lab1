@@ -311,6 +311,13 @@ results = bootstrap_estimate(temp=72)
 quantile(results, probs=c(0.05, 0.95), na.rm=TRUE)
 ```
 
+Based on this boostrap analysis, we obtain
+$$
+bootstrap.CI(Temp=31) = (0.12509, 0.99232)\\
+bootstrap.CI(Temp=72) = (0.00986, 0.06962)
+$$
+Which is slightly more conservative than either our WALD or LRT CI's, but quite similar.
+
 (f) Determine if a quadratic term is needed in the model for the temperature.
 
 ```{r}
@@ -327,21 +334,60 @@ Based on the likelihood ratio test, the quadratic term is not significant for th
 
 With the same set of explanatory variables in your final model, estimate a linear regression model. Explain the model results; conduct model diagnostic; and assess the validity of the model assumptions.  Would you use the linear regression model or binary logistic regression in this case?  Explain why.
 
-```{r}
-mod4 = lm(formula = O.ring/Number ~ Temp, data=data)
-summary(mod4)
-```
-The model correctly indicates that Temp is significant, with a P value < 0.05; however, the model itself is not appropriate for our use case, as it does not produce a probability score, even across the temperatures of interest to us. At $78^{\circ}$F the probability estimate becomes negative.
+First, we should begin by verifying that our temperature data satisfies the basic requirements for an OLS model. Since we are only using temperature as our explanitory variable, it will take the form of a Simple Linear Regression (SLR) model. SLR model's have a set of requirements that we'll want to verify (See Wooldridge 2.5)
+
+## TODO
+
+$$
+y = \beta_{0} + \beta_{1} \cdot temp
+$$
+SLR1 requires that our response variable o.ring/Number, is linear as a function of temperature or at least well approximated. As can be seen from the overlay graph, this assumption is dubious given the existing data set, and even if correct is likely unduely influenced by outliers.
 
 ```{r}
+mod4 = lm(formula = O.ring/data$Number ~ Temp, data=data)
 results_df['pi.hat.linear'] = predict(mod4, newdata=results_df)
 
+ggplot(data=results_df) +
+  geom_point(data=data, aes(Temp, O.ring/Number)) +
+  geom_line(aes(Temp, pi.hat.linear), color='blue') +
+  ggtitle("Estimated probability of O-ring failure as a function of Temperature") +
+  theme(plot.title = element_text(lineheight=1, face='bold'))
+
+```
+
+SLR 2 requires our response and explanatory variables are independent and identically distributed is also not entirely obvious, as discussed in part 2 (book question 4.a).
+
+SLR 3 requires that all of our explanatory variables are non-identical, which is true.
+
+SLR 4 Assumes that the mean of our residual values is zero. Examining the 'residuals vs fitted' plot below, we can see that this is likely not an entirely reasonable assumption, with the residuals appearing to follow more of a quadratic form. Its difficult to say for certain though, as we don't not have many low temperature data points. Additionally, given that our data set is relatively small, it may not be appropriate to rely asymptotic (CLT) assumptions. As we're asked to rely on the same set of explanatory variables for this model as those for our binary logistic regression, violation of SLR 4 may be an indicator that our OLS model is not appropriate.
+
+SLR 5 Homoskedacticity assumption: residual variance is uncorrelated with our explanatory variables. Examining our scale-location plot, we would like to see a relatively flat line if our homoskedacticity assumption holds. This does not appear to be the case, but this ends up being an indicator that we need to rely on techniques that produce robust standard errors for our model analysis.
+
+```{r}
+library(lmtest)
+library(sandwich)
 ggplot(data=results_df, aes(Temp, pi.hat.linear)) +
   geom_point() +
   geom_line(color='blue') +
   ggtitle("Estimated probability of O-ring failure as a function of Temperature") +
   theme(plot.title = element_text(lineheight=1, face='bold'))
+
+# TODO
+#ggplot(data=data) +
+#  geom_point(aes(mod4$fitted.values, mod4$residuals)) +
+#  geom_abline(intercept = 0, slope=0, color='red') +
+#  ggtitle("Estimated probability of O-ring failure as a function of Temperature") +
+#  theme(plot.title = element_text(lineheight=1, face='bold'))
+
+plot(mod4)
+
+# Based on our Heteroskedacticity observations, we will want to use robust standard errors for coeficient analysis
+coeftest(mod4, vcov=vcovHC)
 ```
+
+Finally, while analysis does correctly indicate that Temp is significant, with a P value 0.03195 < 0.05, it is not appropriate for our use case.
+
+For this application, it is more appropriate to choose the binary logistic regression model. As observed in our discussion, the assumption that a linear relationship for probability of failure as a function of temperature is not obvious and even if it were a valid assumption, the output of the model itself is invalid across the range of temperatures of interest. Its prediction of a 30 percent chance of failure does not align well with our logistic regression models, and the linear model begins to predict negative probabilities at $78^{\circ}$F.
 
 **Part 5 (10 points)**
 
