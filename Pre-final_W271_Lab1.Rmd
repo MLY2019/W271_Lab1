@@ -170,7 +170,7 @@ cbind(Estimate = coef(mod2), confint(mod2))
 ```
 The coefficient of *Temp* was estimated to be -0.1156 with the 95% confidence interval of (-0.2122, -0.0245), indicating that lower launch temperature would cause increased probability for an O-ring failure. The p-value is smaller than 0.05, so there is marginal evidence to claim that *Temp* is an important variable for explaining O-ring failure. 
 
-(b) Construct two plots: (1) $\pi$ vs. Temp and (2) Expected number of failures vs. Temp. Use a temperature range of 31° to 81° on the x-axis even though the minimum temperature in the data set was 53°.
+(b) Construct two plots: (1) $\pi$ vs. Temp and (2) Expected number of failures vs. Temp. Use a temperature range of 31? to 81? on the x-axis even though the minimum temperature in the data set was 53?.
 
 Given our logit model from (a), and required temperature range, we compute $\pi_{i}$ at each temperature as:
 $$
@@ -181,7 +181,7 @@ $$
 E[binom(n, \pi_{i})] = n \cdot \pi_{i} = 6 \cdot \pi_{i}
 $$
 ```{r fig.width=8,fig.height=4}
-results_df <- data.frame(Temp=seq(from = 31, to = 81, by = 1))
+results_df = data.frame(Temp=seq(from = 31, to = 81, by = 1))
 params = predict(object=mod2, newdata = results_df, type = 'link', se = TRUE)
 results_df['pi.hat'] = exp(params$fit) / (1 + exp(params$fit))
 # Note that results_df['pi'] is the probability of failure at the corresponding temperature.
@@ -233,9 +233,9 @@ ggplot(data=results_df, aes(x=Temp), group=colors,) +
   theme(plot.title = element_text(lineheight=1, face='bold'))
 ```
 
-(d) The temperature was 31° at launch for the Challenger in 1986. Estimate the probability of an O-ring failure using this temperature, and compute a corresponding confidence interval. Discuss what assumptions need to be made in order to apply the inference procedures.
+(d) The temperature was 31? at launch for the Challenger in 1986. Estimate the probability of an O-ring failure using this temperature, and compute a corresponding confidence interval. Discuss what assumptions need to be made in order to apply the inference procedures.
 
-The probability of an O-ring failure at 31° was estimated using the following equation:
+The probability of an O-ring failure at 31? was estimated using the following equation:
 $$
 \pi_{i} = \frac{e^{\beta_{0} + \beta_{1} \cdot 31}}{1 + e^{\beta_{0} + \beta_{1} \cdot 31}} = 0.81778
 $$
@@ -245,7 +245,7 @@ params = predict(mod2, newdata=data.frame(Temp=31), type = 'link', se = TRUE)
 pi.hat = exp(params$fit) / (1 + exp(params$fit))
 pi.hat
 ```
-Based on our model, the estimated probability of an O-ring failure at 31° is 0.8178. Next, we looked at both the Wald and LRT confidence intervals for this temperature.
+Based on our model, the estimated probability of an O-ring failure at 31? is 0.8178. Next, we looked at both the Wald and LRT confidence intervals for this temperature.
 
 ```{r}
 # Compute Wald CI @ Temp = 31.
@@ -265,7 +265,7 @@ as.numeric(mc.ci)
 The Wald interval we got is (0.1375, 0.9817) and the LRT interval is (0.1419, 0.9905). Since the Wald interval usually has lower true coverage and the LRT interval is pretty close to the Wald interval. We decided to report the LRT inveral.
 In order to apply the inference, we need to assume that the relationship between temperature and the log-odds of O-ring failure is still linear in such temperature range. 
 
-(e) Rather than using Wald or profile LR intervals for the probability of failure, Dalal et al. (1989) use a parametric bootstrap to compute intervals. Their process was to (1) simulate a large number of data sets (n = 23 for each) from the estimated model of  Temp; (2) estimate new models for each data set, say and (3) compute  at a specific temperature of interest. The authors used the 0.05 and 0.95 observed quantiles from the  simulated distribution as their 90% confidence interval limits. Using the parametric bootstrap, compute 90% confidence intervals separately at temperatures of 31° and 72°.27
+(e) Rather than using Wald or profile LR intervals for the probability of failure, Dalal et al. (1989) use a parametric bootstrap to compute intervals. Their process was to (1) simulate a large number of data sets (n = 23 for each) from the estimated model of  Temp; (2) estimate new models for each data set, say and (3) compute  at a specific temperature of interest. The authors used the 0.05 and 0.95 observed quantiles from the  simulated distribution as their 90% confidence interval limits. Using the parametric bootstrap, compute 90% confidence intervals separately at temperatures of 31? and 72?.27
 ```{r warning=FALSE}
 compute_glm = function(X, t) {
   # Get pi estimates for sample
@@ -301,7 +301,7 @@ results = bootstrap_estimate(temp=72)
 quantile(results, probs=c(0.05, 0.95), na.rm=TRUE)
 ```
 
-Using the parametric bootstrap, at temperatures of 31°, we obtained the 90% confidence interval of (0.1182, 0.9928) and at temperatures of 72°, we obtained the 90% confidence interval of (0.0105, 0.0685). It worths of notice that despite the lower conficence level, the bootstrap intervals were wider than either the Wald or LRT interval.
+Using the parametric bootstrap, at temperatures of 31?, we obtained the 90% confidence interval of (0.1182, 0.9928) and at temperatures of 72?, we obtained the 90% confidence interval of (0.0105, 0.0685). It worths of notice that despite the lower conficence level, the bootstrap intervals were wider than either the Wald or LRT interval.
 
 (f) Determine if a quadratic term is needed in the model for the temperature.
 
@@ -320,44 +320,42 @@ With the same set of explanatory variables in your final model, estimate a linea
 
 First, we should begin by verifying that our temperature data satisfies the basic requirements for an OLS model. Since we are only using temperature as our explanitory variable, it will take the form of a Simple Linear Regression (SLR) model. SLR model's have a set of requirements that we'll want to verify (See Wooldridge 2.5)
 
-## TODO
-
 $$
 y = \beta_{0} + \beta_{1} \cdot temp
 $$
-SLR1 requires that our response variable o.ring/Number, is linear as a function of temperature or at least well approximated. As can be seen from the overlay graph, this assumption is dubious given the existing data set, and even if correct is likely unduely influenced by outliers.
-
 ```{r fig.width=8,fig.height=5}
 mod4 = lm(formula = O.ring/data$Number ~ Temp, data=data)
 results_df['pi.hat.linear'] = predict(mod4, newdata=results_df)
-ggplot(data=results_df) +
+
+ggplot(results_df, aes(Temp, pi.hat.linear)) +  geom_line(color='red') +
   geom_point(data=data, aes(Temp, O.ring/Number)) +
-  geom_line(aes(Temp, pi.hat.linear), color='blue') +
-  ggtitle("Estimated probability of O-ring failure as a function of Temperature") +
+  geom_smooth(data=data, method='loess', aes(Temp, O.ring/Number)) + 
+  xlab("Failure Probability") + ylab("Temperature") +
+  ggtitle("Predicted probability of O-ring failure at a given temperature. (Linear Model)") +
   theme(plot.title = element_text(lineheight=1, face='bold'))
 ```
+SLR1 requires that our response variable o.ring/Number, is linear as a function of temperature or at least well approximated. As can be seen from the overlay graph, this assumption is dubious given the existing data set, and even if correct is likely unduely influenced by outliers. 
 
-SLR 2 requires our response and explanatory variables are independent and identically distributed is also not entirely obvious, as discussed in part 2 (book question 4.a).
+SLR 2 requires our response and explanatory variables are independent and identically distributed is also not entirely obvious, as discussed in part 2 (book question 4.a). 
 
-SLR 3 requires that all of our explanatory variables are non-identical, which is true.
+SLR 3 requires that all of our explanatory variables are non-identical, which is true. 
 
-SLR 4 Assumes that the mean of our residual values is zero. Examining the 'residuals vs fitted' plot below, we can see that this is likely not an entirely reasonable assumption, with the residuals appearing to follow more of a quadratic form. Its difficult to say for certain though, as we don't not have many low temperature data points. Additionally, given that our data set is relatively small, it may not be appropriate to rely asymptotic (CLT) assumptions. As we're asked to rely on the same set of explanatory variables for this model as those for our binary logistic regression, violation of SLR 4 may be an indicator that our OLS model is not appropriate.
+SLR 4 Assumes that the mean of our residual values is zero. Examining the 'residuals vs fitted' plot below, we can see that this is likely not an entirely reasonable assumption, with the residuals appearing to follow more of a quadratic form. Its difficult to say for certain though, as we don't not have many low temperature data points. Additionally, given that our data set is relatively small, it may not be appropriate to rely asymptotic (CLT) assumptions. As we're asked to rely on the same set of explanatory variables for this model as those for our binary logistic regression, violation of SLR 4 may be an indicator that our OLS model is not appropriate. 
 
-SLR 5 Homoskedacticity assumption: residual variance is uncorrelated with our explanatory variables. Examining our scale-location plot, we would like to see a relatively flat line if our homoskedacticity assumption holds. This does not appear to be the case, but this ends up being an indicator that we need to rely on techniques that produce robust standard errors for our model analysis.
+SLR 5 Homoskedacity assumption: residual variance is uncorrelated with our explanatory variables. Examining our scale-location plot, we would like to see a relatively flat line if our homoskedacticity assumption holds. This does not appear to be the case, but this ends up being an indicator that we need to rely on techniques that produce robust standard errors for our model analysis.
 
 ```{r fig.width=3,fig.height=3}
-ggplot(data=results_df, aes(Temp, pi.hat.linear)) +
-  geom_point() +
-  geom_line(color='blue') +
-  ggtitle("Estimated probability of O-ring failure as a function of Temperature") +
+ggplot(mod4, aes(.fitted, .resid)) + geom_point() +
+  geom_smooth(method="loess") + geom_abline(intercept = 0, linetype="dashed", slope=0, color='red') +
+  xlab("fitted values") + ylab("Residuals") +
+  ggtitle("Residuals vs. Fitted") +
   theme(plot.title = element_text(lineheight=1, face='bold'))
-# TODO
-#ggplot(data=data) +
-#  geom_point(aes(mod4$fitted.values, mod4$residuals)) +
-#  geom_abline(intercept = 0, slope=0, color='red') +
-#  ggtitle("Estimated probability of O-ring failure as a function of Temperature") +
-#  theme(plot.title = element_text(lineheight=1, face='bold'))
-plot(mod4)
+
+ggplot(mod4, aes(.fitted, sqrt(abs(.stdresid)))) + geom_point(na.rm=TRUE) +
+    geom_smooth(method="loess", na.rm = TRUE) + xlab("Fitted Value") +
+    ylab(expression(sqrt("|Standardized residuals|"))) +
+    ggtitle("Scale-Location")+theme_bw()
+
 # Based on our Heteroskedacticity observations, we will want to use robust standard errors for coeficient analysis
 coeftest(mod4, vcov=vcovHC)
 ```
