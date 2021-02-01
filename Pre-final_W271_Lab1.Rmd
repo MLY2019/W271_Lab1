@@ -326,7 +326,7 @@ ggplot(results_df, aes(Temp, pi.hat.linear)) +  geom_line(color='red') +
   geom_point(data=data, aes(Temp, O.ring/Number)) +
   geom_smooth(data=data, method='loess', aes(Temp, O.ring/Number)) + 
   xlab("Failure Probability") + ylab("Temperature") +
-  ggtitle("Predicted probability of O-ring failure at a given temperature. (Linear Model)") +
+  ggtitle("Predicted probability of O-ring failure at a given temperature.\n(Linear Model)") +
   theme(plot.title = element_text(lineheight=1, face='bold'))
 ```
 
@@ -373,4 +373,6 @@ odds.ci <- round(exp((-5)*confint(mod2)),2)
 odds.ci
 ```
 
-We estimated three logistic regression models to elucidate the key factors for an O-ring failure. Based on the analysis, we selected the one that includes launch temperature as the only explanatory variable as our final model. According to the final model, the decrease in launch temperature will increase the probability of an O-ring failure. Specifically, for every 5F decrease in temperature, the odds of an O-ring failure is estimated to increase by 1.78 times. The 95% confidence LRT interval for odds ratio is (1.13, 2.89). At 31F, which was the temperature when Challenger was launched, the probability for an O-ring failure is predicted to be 82%. The 95% confidence LRT interval for the estimated probability is (14%, 99%) while the 90% confidence parametric interval is (12%, 99%). Both intervals are wide, due to fewer observations in the low temperature region. Assuming the relationship between the log-odds of an O-ring failure and launch temperature is linear, we infer that when launching at 31F, the chance for an O-ring failure is not low.   
+We estimated three logistic regression models to elucidate the key factors for an O-ring failure. Based on the analysis, we selected the one that includes launch temperature as the only explanatory variable as our final model. According to the final model, the decrease in launch temperature will increase the probability of an O-ring failure. Specifically, for every 5F decrease in temperature, the odds of an O-ring failure is estimated to increase by 1.78 times. The 95% confidence LRT interval for odds ratio is (1.13, 2.89). At 31F, which was the temperature when Challenger was launched, the probability for an O-ring failure is predicted to be 82%. The 95% confidence LRT interval for the estimated probability is (14%, 99%) while the 90% confidence parametric interval is (12%, 99%). Both intervals are wide, due to fewer observations in the low temperature region. Assuming the relationship between the log-odds of an O-ring failure and launch temperature is linear, we infer that when launching at 31F, the chance for an O-ring failure is not low.
+
+As an added point, which may be worth considering in the context of this data at the time of the challenger accident, it does seem as though discounting the influence of pressure and interactions it may have with temperature is not entirely settled. While it is not obviously significant given the current data, it does seem concerning and subsequent error modeling would benefit from collection of addtional test data related to pressure/temperature interactions.
