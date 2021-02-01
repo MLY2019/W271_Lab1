@@ -33,7 +33,6 @@ The initial inspection shows that there are five variables in the dataset and th
 Next we performed the univariate analysis for *O.ring*, *Temp* and *Pressure*.
 
 # Univariate analysis of *O-ring*, *Temp* and *Pressure*
-
 ```{r fig.width=9,fig.height=3}
 Oring.plot <- ggplot(data, aes(x = O.ring)) +
   geom_histogram(aes(y = ..density..), binwidth = 1, fill="#0072B2", colour="black") +
@@ -42,7 +41,7 @@ Oring.plot <- ggplot(data, aes(x = O.ring)) +
 
 temp.plot <- ggplot(data, aes(x = Temp)) +
   geom_histogram(aes(y = ..density..), binwidth = 1, fill="#0072B2", colour="black") +
-  ggtitle("Launch temperature") + 
+  ggtitle("Temperature") + 
   theme(plot.title = element_text(lineheight=1, face="bold"))
 
 pressure.plot <- ggplot(data, aes(x = Pressure)) +
@@ -52,15 +51,17 @@ pressure.plot <- ggplot(data, aes(x = Pressure)) +
 
 grid.arrange(Oring.plot, temp.plot, pressure.plot, ncol=3)
 ```
-```{r fig.width=3.5,fig.height=4}
-boxplot(data$Temp, main = "Launch temperature")
+```{r fig.width=3,fig.height=3.5}
+boxplot(data$Temp, main = "Temperature")
+```
+```{r}
 outlier <- data %>% filter(Temp < 55)
 outlier
 ```
 From the histogram of *O.ring*, we can tell that about 70% of the flights had no O-ring failure, 20%  had only 1 failure and 10% had 2 failures. Visually, the distribution of *Temp* is slightly right skewed. From the data summary, we can also see that the median (70.00 F) is a bit larger than the mean (69.57 F). From the boxplot, we observed an outlier with the temperature lower than 55 F. After checking, we found that the outlier had 2 O-ring failures. According the Dalal's paper, the leak test pressure was originally 50 psi, then increased to 100 psi and finally 200 psi, in the sequence of flights launching. Based on the histogram of *Pressure*, we found that 200 psi leak test pressure was used in over 60% of the flights, 100 psi used in less than 10% and 50 psi used in less than 30% of the flights.
 
 We initiated the explore on the correlations between three variables by plotting the correlation matrix.
-```{r fig.width=5,fig.height=5}
+```{r fig.width=4,fig.height=4}
 correlations = cor(data[c('O.ring', 'Temp', 'Pressure')])
 corrplot.mixed(correlations, lower='number', upper='ellipse')
 ```
@@ -68,52 +69,50 @@ corrplot.mixed(correlations, lower='number', upper='ellipse')
 There seems to be some negative correlation between *O.ring* and *Temp* and some positive correlation between *O.ring* and *Pressure*. No correlation was found between *Temp* and *Pressure*. Next, we performed the bivariate analysis between each pairs of variables.
 
 # Bivariate analysis of *O.ring* vs. *Temp*
-
-```{r}
+```{r fig.width=6,fig.height=4}
 ggplot(data, aes(factor(O.ring), Temp)) +
   geom_boxplot(aes(fill = factor(O.ring))) + 
   geom_jitter() +
-  ggtitle("Launch temperature by O-ring failures") + 
+  ggtitle("Temperature by O-ring failures") + 
   theme(plot.title = element_text(lineheight=1, face="bold"))
 ```
+
 We firsly grouped launch temperature by the number of O-ring failures and ploted each group using boxplot. Apparently, the flights with 0 O-ring failure were launched under higher temperature, than that for the flights with 1 or 2 failures. However, it worths to notice that the data size of flights with 1 or 2 O-ring failures is smaller than that of 0 failure flights. Especially, there are only 2 flights with 2 O-ring failures. 
 
 # Bivariate analysis of *O.ring* vs. *Pressure*
-
-```{r}
+```{r fig.width=6,fig.height=4}
 ggplot(data, aes(x = factor(O.ring), fill = factor(O.ring))) +
   geom_bar() + 
   facet_wrap(~Pressure) +
-  ggtitle("O-ring failures at different levels of leak test pressure") + 
+  ggtitle("O-ring failures by pressure") + 
   theme(plot.title = element_text(lineheight=1, face="bold"))
 ```
+
 In the bivariate analysis between O-ring failures and leak test pressure, 0, 1 and 2 O-ring failures were counted, respectively, at different levels of pressure. From the corresponding plot, we cannot tell obvious correlation between *Pressure* and *O.ring*. Further analysis is to be conducted for elucidating potential correlation. 
 
 # Bivariate analysis of *Temp* vs. *Pressure*
-
-```{r}
+```{r fig.width=6,fig.height=4}
 ggplot(data, aes(factor(Pressure), Temp)) +
   geom_boxplot(aes(fill = factor(Pressure))) + 
   geom_jitter() +
-  ggtitle("Launch temperature by leak test pressure") + 
+  ggtitle("Temperature by Pressure") + 
   theme(plot.title = element_text(lineheight=1, face="bold"))
 ```
+
 Bivariate analysis between launch temperature and pressure for leak test was also performed to check for potential dependence between the explanatory variables. The boxplot of temperature, grouped by pressure, seems to show that when 100 psi pressure was used, the launch temperature is higher than that when 50 or 200 psi was used. However, we cannot ensure that two variables are dependent solely based on this observation because there are only two data points for 100 psi. 
 
 # Trivariate analysis
-```{r}
+```{r fig.width=6,fig.height=4}
 ggplot(data, aes(factor(O.ring), Temp)) +
   geom_boxplot(aes(fill = factor(O.ring))) + 
   facet_wrap(~Pressure) +
-  ggtitle("Launch temperature by O-ring failures at different levels of leak test pressure") + 
+  ggtitle("Temperature by O-ring failures at different levels of pressure") + 
   theme(plot.title = element_text(lineheight=1, face="bold"))
 ```
 
 Trivariate analysis was performed by examing launch temperature by O-ring failures at three different levels of leak test pressure. Similar correlation between *Temp* and *O-ring* was observed when the pressure of 200 psi was used. However, the plot at pressure levels of 50 or 100 psi didn't provide much useful information due to the small data size. 
 
 **Part 2 (20 points)** 
-
-Answer the following from Question 4 of Bilder and Loughin Section 2.4 Exercises (page 129):
 
 (a) The authors use logistic regression to estimate the probability an O-ring will fail. In order to use this model, the authors needed to assume that each O-ring is independent for each launch. Discuss why this assumption is necessary and the potential problems with it. Note that a subsequent analysis helped to alleviate the authors' concerns about independence.
 
@@ -137,11 +136,11 @@ cbind(Estimate = coef(mod1), confint(mod1))
 c.temp <- -5
 exp(c.temp*coef(mod1)['Temp'])
 ```
-The coefficient of $t_i$ was estimated to be -0.0983 with the 95% Wald confidence interval of -0.1941 to -0.0136, indicating that the decrease on the launch temperature would cause the increase on the odds for an O-ring to fail. Specifically, every 5F decrease in launch temperature would increase the odds for failure by around 63%. The coefficient of $p_i$ was estimated to be 0.0085 while 0 was included in the 95% Wald confidence interval, indicating that leak test pressure may not be an important factor for explaining O-ring failure. 
+The coefficient of $t_i$ was estimated to be -0.0983 with the 95% confidence interval of -0.1941 to -0.0136, indicating that the decrease on the launch temperature would cause the increase on the odds for an O-ring to fail. Specifically, every 5F decrease in launch temperature would increase the odds for failure by around 63%. The coefficient of $p_i$ was estimated to be 0.0085 while 0 was included in the 95% confidence interval, indicating that leak test pressure may not be an important factor for explaining O-ring failure. 
 
 (c) Perform LRTs to judge the importance of the explanatory variables in the model.
 
-Because the Wald interval usually has lower true coverage than the cofidence level, we performed likelihood ratio test using the *Anova* function to judge the importance of the explanatory varialbes in the first model. 
+We performed likelihood ratio test using the *Anova* function to judge the importance of the explanatory varialbes in the first model. 
 
 ```{r}
 Anova(mod1, test = "LR")
@@ -151,7 +150,7 @@ For the test of *Pressure* with $H_0 : \beta_2 = 0$ vs. $H_\alpha : \beta_2 \neq
 
 (d) The authors chose to remove Pressure from the model based on the LRTs. Based on your results, discuss why you think this was done. Are there any potential problems with removing this variable?
 
-The authors fit a model using both *Temp* and *Pressure* and then fit another model using only *Temp*. By comparing the residual deviances of two models, they found that keeing only *Temp* in the model just increased the residual deviance by 1.54, which was not significant, indicating that *Pressure* may had a very weak effect. This is consistent with our LRT results in the above section. Actually the LRT statistic we computed for *Pressure* was equivalent to the difference in residual deviances computed by the authors. 
+The authors fit a model using both *Temp* and *Pressure* and then fit another model using only *Temp*. By comparing the residual deviances of two models, they found that keeing only *Temp* in the model just increased the residual deviance by 1.54, which was not significant, indicating that *Pressure* may have a very weak effect. This is consistent with our LRT results in the above section. Actually the LRT statistic we computed for *Pressure* was equivalent to the difference in residual deviances computed by the authors. 
 However, the apparently weak effect of *Pressure* might be due to limited data for 50 and 100 psi. Also, the interaction between *Temp* and *Pressure* was not considered by the authors. Given that high pressure can cause "blow holes" in the putty, it can make it easier for the hot gasses to escape. If so, the effect of pressure could be very significant when temperature is very low. Therefore, removing *Pressure* from the model could possibly cause serious information loss.
 
 *Part 3 (35 points)**
@@ -172,7 +171,7 @@ The coefficient of *Temp* was estimated to be -0.1156 with the 95% confidence in
 
 (b) Construct two plots: (1) $\pi$ vs. Temp and (2) Expected number of failures vs. Temp. Use a temperature range of 31? to 81? on the x-axis even though the minimum temperature in the data set was 53?.
 
-Given our logit model from (a), and required temperature range, we compute $\pi_{i}$ at each temperature as:
+Given our model from (a), and required temperature range, we compute $\pi_{i}$ at each temperature as:
 $$
 \pi_{i} = \frac{e^{\beta_{0} + \beta_{1} \cdot t_{i}}}{1 + e^{\beta_{0} + \beta_{1} \cdot t_{i}}}
 $$
@@ -198,7 +197,7 @@ prob.plot <- ggplot(data=results_df, aes(Temp, pi.hat)) +
 fail.plot <- ggplot(data=results_df, aes(Temp, expected_failures)) +
   geom_point() +
   geom_line(color='blue') +
-  ggtitle("Expected number of failures \nas a function of Temperature") +
+  ggtitle("Expected number of O-ring failures \nas a function of Temperature") +
   theme(plot.title = element_text(lineheight=1, face='bold'))
 grid.arrange(prob.plot, fail.plot, ncol=2)
 ```
@@ -216,7 +215,7 @@ $$
 $$
 Bounds for lower temperatures are significanlty wider, because we have much fewer samples at lower temperatures, and no samples below $53^{\circ} F$.
 
-```{r}
+```{r fig.width=6,fig.height=4}
 alpha = 0.05
 CI.preds.low = params$fit + (qnorm(p=c(alpha/2)) * params$se.fit)
 CI.preds.high = params$fit + (qnorm(p=c(1-alpha/2)) * params$se.fit)
@@ -229,15 +228,15 @@ ggplot(data=results_df, aes(x=Temp), group=colors,) +
   geom_line(aes(y=CI.pi.low, color='CI.pi.low'), linetype='dotdash') +
   labs(x = "Temperature", y = "Prob. Of Failure", color = "Legend") +
   scale_color_manual(values = colors) +
-  ggtitle("Estimated probability of O-ring failure as a function of Temperature, \nwith 95% Wald Confidence Interval") +
+  ggtitle("Estimated probability of O-ring failure as a function of \nTemperature, with 95% Wald Confidence Interval") +
   theme(plot.title = element_text(lineheight=1, face='bold'))
 ```
 
-(d) The temperature was 31? at launch for the Challenger in 1986. Estimate the probability of an O-ring failure using this temperature, and compute a corresponding confidence interval. Discuss what assumptions need to be made in order to apply the inference procedures.
+(d) The temperature was 31F at launch for the Challenger in 1986. Estimate the probability of an O-ring failure using this temperature, and compute a corresponding confidence interval. Discuss what assumptions need to be made in order to apply the inference procedures.
 
-The probability of an O-ring failure at 31? was estimated using the following equation:
+The probability of an O-ring failure at 31F was estimated using the following equation:
 $$
-\pi_{i} = \frac{e^{\beta_{0} + \beta_{1} \cdot 31}}{1 + e^{\beta_{0} + \beta_{1} \cdot 31}} = 0.81778
+\pi_{i} = \frac{e^{\beta_{0} + \beta_{1} \cdot 31}}{1 + e^{\beta_{0} + \beta_{1} \cdot 31}}
 $$
 ```{r}
 # Compute probability, above.
@@ -245,7 +244,7 @@ params = predict(mod2, newdata=data.frame(Temp=31), type = 'link', se = TRUE)
 pi.hat = exp(params$fit) / (1 + exp(params$fit))
 pi.hat
 ```
-Based on our model, the estimated probability of an O-ring failure at 31? is 0.8178. Next, we looked at both the Wald and LRT confidence intervals for this temperature.
+Based on our model, the estimated probability of an O-ring failure at 31F is 0.8178. Next, we looked at both the Wald and LRT confidence intervals for this temperature.
 
 ```{r}
 # Compute Wald CI @ Temp = 31.
@@ -262,16 +261,15 @@ mc.ci = exp(mc.ci.logit$confint) / (1 + exp(mc.ci.logit$confint))
 paste("MC CI:")
 as.numeric(mc.ci)
 ```
-The Wald interval we got is (0.1375, 0.9817) and the LRT interval is (0.1419, 0.9905). Since the Wald interval usually has lower true coverage and the LRT interval is pretty close to the Wald interval. We decided to report the LRT inveral.
+The Wald interval we got is (0.1375, 0.9817) and the LRT interval is (0.1419, 0.9905). Since the Wald interval usually has lower true coverage and the LRT interval is pretty close to the Wald interval, we decided to report the LRT inveral.
 In order to apply the inference, we need to assume that the relationship between temperature and the log-odds of O-ring failure is still linear in such temperature range. 
 
-(e) Rather than using Wald or profile LR intervals for the probability of failure, Dalal et al. (1989) use a parametric bootstrap to compute intervals. Their process was to (1) simulate a large number of data sets (n = 23 for each) from the estimated model of  Temp; (2) estimate new models for each data set, say and (3) compute  at a specific temperature of interest. The authors used the 0.05 and 0.95 observed quantiles from the  simulated distribution as their 90% confidence interval limits. Using the parametric bootstrap, compute 90% confidence intervals separately at temperatures of 31? and 72?.27
+(e) Rather than using Wald or profile LR intervals for the probability of failure, Dalal et al. (1989) use a parametric bootstrap to compute intervals. Their process was to (1) simulate a large number of data sets (n = 23 for each) from the estimated model of  Temp; (2) estimate new models for each data set, say and (3) compute  at a specific temperature of interest. The authors used the 0.05 and 0.95 observed quantiles from the  simulated distribution as their 90% confidence interval limits. Using the parametric bootstrap, compute 90% confidence intervals separately at temperatures of 31F and 72F
 ```{r warning=FALSE}
 compute_glm = function(X, t) {
   # Get pi estimates for sample
   pi.logit.sample = exp(mod2$coefficients[1] + mod2$coefficients[2] * X)
   pi.sample = pi.logit.sample / (1 + pi.logit.sample)
-  
   # Sample binomial for simulated errors.
   y = rbinom(n=length(X), size=6, prob=pi.sample)
   mod.sample <- glm(formula = y/data$Number ~ X, family = binomial(link = logit), weights=data$Number)
@@ -280,14 +278,11 @@ compute_glm = function(X, t) {
   
   return(pi.hat.star)
 }
-
 # set seed for repeatable results
 set.seed(666)
-
 bootstrap_estimate = function(temp) {
   samples = 23
   n_samples=2000
-  
   # Sample from the provided data
   x = sample(data$Temp, samples*n_samples, replace=TRUE)
   xmatrix = matrix(data=unlist(x), nrow=samples, ncol=n_samples)
@@ -301,7 +296,7 @@ results = bootstrap_estimate(temp=72)
 quantile(results, probs=c(0.05, 0.95), na.rm=TRUE)
 ```
 
-Using the parametric bootstrap, at temperatures of 31?, we obtained the 90% confidence interval of (0.1182, 0.9928) and at temperatures of 72?, we obtained the 90% confidence interval of (0.0105, 0.0685). It worths of notice that despite the lower conficence level, the bootstrap intervals were wider than either the Wald or LRT interval.
+Using the parametric bootstrap, at temperatures of 31F, we obtained the 90% confidence interval of (0.1182, 0.9928) and at temperatures of 72F, we obtained the 90% confidence interval of (0.0105, 0.0685). It worths of notice that despite the lower conficence level, the bootstrap interval was wider than either the Wald or LRT interval.
 
 (f) Determine if a quadratic term is needed in the model for the temperature.
 
@@ -312,18 +307,18 @@ summary(mod3)
 anova(mod2, mod3, test = "Chisq")
 ```
 
-We fit and estimated another model with the quadratic term for the temperatured included. Based on the likelihood ratio test, the addition of the quadratic term only dereased the residual deviance by 0.4947, which is significant (P value ~0.4818). Therefore, we concluded that the quadratic term is not needed for the model.
+We fit and estimated another model with the quadratic term for the temperatured included. Based on the likelihood ratio test, the addition of the quadratic term only dereased the residual deviance by 0.4947, which is not significant (P value ~0.4818). Therefore, we concluded that the quadratic term is not needed for the model.
 
 **Part 4 (10 points)**
 
 With the same set of explanatory variables in your final model, estimate a linear regression model. Explain the model results; conduct model diagnostic; and assess the validity of the model assumptions.  Would you use the linear regression model or binary logistic regression in this case?  Explain why.
 
-First, we should begin by verifying that our temperature data satisfies the basic requirements for an OLS model. Since we are only using temperature as our explanitory variable, it will take the form of a Simple Linear Regression (SLR) model. SLR model's have a set of requirements that we'll want to verify (See Wooldridge 2.5)
+First, we checked whether the data satisfies the basic requirements for an OLS model. Since we are only using temperature as our explanitory variable, it will take the form of a Simple Linear Regression (SLR) model. SLR models have a set of requirements that we need to verify (see Wooldridge 2.5).
 
 $$
 y = \beta_{0} + \beta_{1} \cdot temp
 $$
-```{r fig.width=8,fig.height=5}
+```{r fig.width=6,fig.height=4}
 mod4 = lm(formula = O.ring/data$Number ~ Temp, data=data)
 results_df['pi.hat.linear'] = predict(mod4, newdata=results_df)
 
@@ -334,6 +329,7 @@ ggplot(results_df, aes(Temp, pi.hat.linear)) +  geom_line(color='red') +
   ggtitle("Predicted probability of O-ring failure at a given temperature. (Linear Model)") +
   theme(plot.title = element_text(lineheight=1, face='bold'))
 ```
+
 SLR1 requires that our response variable o.ring/Number, is linear as a function of temperature or at least well approximated. As can be seen from the overlay graph, this assumption is dubious given the existing data set, and even if correct is likely unduely influenced by outliers. 
 
 SLR 2 requires our response and explanatory variables are independent and identically distributed is also not entirely obvious, as discussed in part 2 (book question 4.a). 
@@ -344,18 +340,18 @@ SLR 4 Assumes that the mean of our residual values is zero. Examining the 'resid
 
 SLR 5 Homoskedacity assumption: residual variance is uncorrelated with our explanatory variables. Examining our scale-location plot, we would like to see a relatively flat line if our homoskedacticity assumption holds. This does not appear to be the case, but this ends up being an indicator that we need to rely on techniques that produce robust standard errors for our model analysis.
 
-```{r fig.width=3,fig.height=3}
-ggplot(mod4, aes(.fitted, .resid)) + geom_point() +
+```{r fig.width=6,fig.height=3}
+residual <- ggplot(mod4, aes(.fitted, .resid)) + geom_point() +
   geom_smooth(method="loess") + geom_abline(intercept = 0, linetype="dashed", slope=0, color='red') +
-  xlab("fitted values") + ylab("Residuals") +
+  xlab("Fitted values") + ylab("Residuals") +
   ggtitle("Residuals vs. Fitted") +
   theme(plot.title = element_text(lineheight=1, face='bold'))
-
-ggplot(mod4, aes(.fitted, sqrt(abs(.stdresid)))) + geom_point(na.rm=TRUE) +
+skedacity <- ggplot(mod4, aes(.fitted, sqrt(abs(.stdresid)))) + geom_point(na.rm=TRUE) +
     geom_smooth(method="loess", na.rm = TRUE) + xlab("Fitted Value") +
     ylab(expression(sqrt("|Standardized residuals|"))) +
-    ggtitle("Scale-Location")+theme_bw()
-
+    ggtitle("Scale-Location")+
+    theme(plot.title = element_text(lineheight=1, face='bold'))
+grid.arrange(residual, skedacity, ncol=2)
 # Based on our Heteroskedacticity observations, we will want to use robust standard errors for coeficient analysis
 coeftest(mod4, vcov=vcovHC)
 ```
